@@ -29,14 +29,16 @@ public class TurretIOTalonFX implements TurretIO {
   private double positionSetpointDegs;
 
   private double startAngleDegs;
+  private final double gearRatio; // Ring:Motor.
 
-  private StatusSignal<Angle> turretPositionRotations;
+  private StatusSignal<Angle> turretMotorPositionRotations;
   private final StatusSignal<AngularVelocity> velocityDegsPerSec;
   private final StatusSignal<Voltage> appliedVolts;
   private final StatusSignal<Current> statorCurrentAmps;
   private final StatusSignal<Current> supplyCurrentAmps;
 
-  public TurretIOTalonFX(int leadID, int canCoderID) {
+  public TurretIOTalonFX(int leadID, int canCoderID, double ringToothCount, double motorToothCount) {
+    gearRatio = ringToothCount/motorToothCount;
     CANcoderConfiguration canConfig = new CANcoderConfiguration();
     // change?
     canConfig.MagnetSensor.SensorDirection = SensorDirectionValue.CounterClockwise_Positive;
@@ -51,12 +53,12 @@ public class TurretIOTalonFX implements TurretIO {
     talonConfig.Feedback.FeedbackSensorSource = FeedbackSensorSourceValue.RotorSensor;
     talonConfig.Feedback.SensorToMechanismRatio = 1;
     turretMotor = new TalonFX(leadID);
-    turretCAN = new CANcoder(canCoderID);
+    turretCAN = new CANcoder(canCoderID); // Assuming this is mounted on the Turret.
 
     turretMotor.getConfigurator().apply(talonConfig);
     turretCAN.getConfigurator().apply(canConfig);
 
-    if (turretCAN.isConnected()) {
+    if (turretCAN.isConnected()) { // This logic seems a bit redundant?
       turretMotor.setPosition(
           (turretCAN.getAbsolutePosition().getValueAsDouble() - Units.degreesToRotations(57 - 12))
               * SubsystemConstants.ScoralArmConstants.ARM_GEAR_RATIO);
@@ -65,22 +67,23 @@ public class TurretIOTalonFX implements TurretIO {
           Units.degreesToRotations(SubsystemConstants.ScoralArmConstants.STOW_SETPOINT_DEG)
               * SubsystemConstants.ScoralArmConstants.ARM_GEAR_RATIO);
     }
+  
 
-    turretPositionRotations = turretMotor.getPosition();
+    turretMotorPositionRotations = turretMotor.getPosition();
     velocityDegsPerSec = turretMotor.getVelocity();
     appliedVolts = turretMotor.getMotorVoltage();
     statorCurrentAmps = turretMotor.getStatorCurrent();
     supplyCurrentAmps = turretMotor.getSupplyCurrent();
 
-    positionSetpointDegs = SubsystemConstants.ScoralArmConstants.STOW_SETPOINT_DEG;
+    positionSetpointDegs = SubsystemConstants.TurretConstants.defaultPosDegs;
 
-    Logger.recordOutput("start angle", startAngleDegs);
+    Logger.recordOutput("start angle", startAngleDegs); // This doesn't appear to be doing anything?
 
     turretMotor.optimizeBusUtilization();
 
     BaseStatusSignal.setUpdateFrequencyForAll(
         100,
-        turretPositionRotations,
+        turretMotorPositionRotations,
         velocityDegsPerSec,
         appliedVolts,
         statorCurrentAmps,
@@ -91,15 +94,14 @@ public class TurretIOTalonFX implements TurretIO {
   @Override
   public void updateInputs(TurretIOInputs inputs) {
     BaseStatusSignal.refreshAll(
-        turretPositionRotations,
+      turretMotorPositionRotations,
         velocityDegsPerSec,
         appliedVolts,
         statorCurrentAmps,
         supplyCurrentAmps);
  
     inputs.positionDegs =
-        Units.rotationsToDegrees(turretPositionRotations.getValueAsDouble())
-            / SubsystemConstants.ScoralArmConstants.ARM_GEAR_RATIO;
+        Units.rotationsToDegrees(turretMotorPositionRotations.getValueAsDouble()*gearRatio); // This should work?
 
     inputs.velocityDegsPerSec = Units.rotationsToDegrees(velocityDegsPerSec.getValueAsDouble());
     inputs.appliedVolts = appliedVolts.getValueAsDouble();
@@ -110,13 +112,13 @@ public class TurretIOTalonFX implements TurretIO {
     Logger.recordOutput(
         "Turret Angular Position: ",
         Units.rotationsToDegrees(
-          turretCAN.getAbsolutePosition().getValueAsDouble())); //TODO: Ideally, you should have some offset constant when actually implementing this.
+          turretCAN.getAbsolutePosition().getValueAsDouble())); //TODO: Ideally, you should have some offset constant when actually implementing this (if needed).
   }
 
   @Override
-  public void setBrakeMode(boolean bool) {
+  public void setBrakeMode(boolean brake) {
     TalonFXConfiguration config = new TalonFXConfiguration();
-    if (bool) {
+    if (brake) {
       config.MotorOutput.NeutralMode = NeutralModeValue.Brake;
     } else {
       config.MotorOutput.NeutralMode = NeutralModeValue.Coast;
@@ -131,8 +133,7 @@ public class TurretIOTalonFX implements TurretIO {
 
     turretMotor.setControl(
         new PositionVoltage(
-                Units.degreesToRotations(positionDegs)
-                    * SubsystemConstants.ScoralArmConstants.ARM_GEAR_RATIO)
+                Units.degreesToRotations(positionDegs)/gearRatio) //TODO: Implement Turret Logic (this looks good, but need to check).
             .withFeedForward(ffVolts)); // CHECK FOR STOW ANGLE (positionDegs - 59)
   }
 
@@ -143,7 +144,7 @@ public class TurretIOTalonFX implements TurretIO {
 
   @Override
   public void stop() {
-    this.positionSetpointDegs = turretPositionRotations.getValueAsDouble();
+    this.positionSetpointDegs = turretMotorPositionRotations.getValueAsDouble();
     turretMotor.stopMotor();
   }
 

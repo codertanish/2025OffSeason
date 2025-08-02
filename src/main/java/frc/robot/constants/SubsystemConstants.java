@@ -112,6 +112,7 @@ public final class SubsystemConstants {
 
         public static final double CURRENT_LIMIT = 50.0; // TODO: Update to actual value.
         public static final boolean CURRENT_LIMIT_ENABLED = true;
+        public static double defaultPosDegs = 0; // TODO: Update this to an actual value. This is the default position of the turret (ideally where it would initialize as well).
 
   }
 
