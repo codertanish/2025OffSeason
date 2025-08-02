@@ -107,6 +107,14 @@ public final class SubsystemConstants {
     public static final int NUMBER_LEDS = 57 + 24 + 13;
   }
 
+  //TURRET TEMPLATE:
+  public final static class TurretConstants {
+
+        public static final double CURRENT_LIMIT = 50.0; // TODO: Update to actual value.
+        public static final boolean CURRENT_LIMIT_ENABLED = true;
+
+  }
+
   public static enum LED_STATE {
     BLUE,
     RED,
