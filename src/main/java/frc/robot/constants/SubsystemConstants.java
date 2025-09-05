@@ -107,13 +107,18 @@ public final class SubsystemConstants {
     public static final int NUMBER_LEDS = 57 + 24 + 13;
   }
 
-  //TURRET TEMPLATE:
-  public final static class TurretConstants {
+  // TURRET TEMPLATE:
+  public static final class TurretConstants {
 
-        public static final double CURRENT_LIMIT = 50.0; // TODO: Update to actual value.
-        public static final boolean CURRENT_LIMIT_ENABLED = true;
-        public static double defaultPosDegs = 0; // TODO: Update this to an actual value. This is the default position of the turret (ideally where it would initialize as well).
+    public static final double CURRENT_LIMIT = 50.0; // TODO: Update to actual value.
+    public static final boolean CURRENT_LIMIT_ENABLED = true;
+    public static double defaultPosDegs =
+        0; // TODO: Update this to an actual value. This is the default position of the turret
+    // (ideally where it would initialize as well).
 
+    public static final double motorToothCount = 50;
+    public static final double ringToothCount = 150;
+    public static final double gearRatio = ringToothCount / motorToothCount;
   }
 
   public static enum LED_STATE {

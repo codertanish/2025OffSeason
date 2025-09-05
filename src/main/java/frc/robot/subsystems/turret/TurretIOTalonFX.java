@@ -1,7 +1,5 @@
 package frc.robot.subsystems.turret;
 
-import org.littletonrobotics.junction.Logger;
-
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.CANcoderConfiguration;
@@ -14,14 +12,13 @@ import com.ctre.phoenix6.signals.FeedbackSensorSourceValue;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix6.signals.SensorDirectionValue;
-
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
 import frc.robot.constants.SubsystemConstants;
-
+import org.littletonrobotics.junction.Logger;
 
 public class TurretIOTalonFX implements TurretIO {
   private final TalonFX turretMotor;
@@ -37,8 +34,9 @@ public class TurretIOTalonFX implements TurretIO {
   private final StatusSignal<Current> statorCurrentAmps;
   private final StatusSignal<Current> supplyCurrentAmps;
 
-  public TurretIOTalonFX(int leadID, int canCoderID, double ringToothCount, double motorToothCount) {
-    gearRatio = ringToothCount/motorToothCount;
+  public TurretIOTalonFX(
+      int leadID, int canCoderID, double ringToothCount, double motorToothCount) {
+    gearRatio = ringToothCount / motorToothCount;
     CANcoderConfiguration canConfig = new CANcoderConfiguration();
     // change?
     canConfig.MagnetSensor.SensorDirection = SensorDirectionValue.CounterClockwise_Positive;
@@ -47,7 +45,8 @@ public class TurretIOTalonFX implements TurretIO {
 
     TalonFXConfiguration talonConfig = new TalonFXConfiguration();
     talonConfig.CurrentLimits.StatorCurrentLimit = SubsystemConstants.TurretConstants.CURRENT_LIMIT;
-    talonConfig.CurrentLimits.StatorCurrentLimitEnable = SubsystemConstants.TurretConstants.CURRENT_LIMIT_ENABLED;
+    talonConfig.CurrentLimits.StatorCurrentLimitEnable =
+        SubsystemConstants.TurretConstants.CURRENT_LIMIT_ENABLED;
     talonConfig.MotorOutput.NeutralMode = NeutralModeValue.Brake;
     talonConfig.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
     talonConfig.Feedback.FeedbackSensorSource = FeedbackSensorSourceValue.RotorSensor;
@@ -67,7 +66,6 @@ public class TurretIOTalonFX implements TurretIO {
           Units.degreesToRotations(SubsystemConstants.ScoralArmConstants.STOW_SETPOINT_DEG)
               * SubsystemConstants.ScoralArmConstants.ARM_GEAR_RATIO);
     }
-  
 
     turretMotorPositionRotations = turretMotor.getPosition();
     velocityDegsPerSec = turretMotor.getVelocity();
@@ -88,20 +86,20 @@ public class TurretIOTalonFX implements TurretIO {
         appliedVolts,
         statorCurrentAmps,
         supplyCurrentAmps);
-
   }
 
   @Override
   public void updateInputs(TurretIOInputs inputs) {
     BaseStatusSignal.refreshAll(
-      turretMotorPositionRotations,
+        turretMotorPositionRotations,
         velocityDegsPerSec,
         appliedVolts,
         statorCurrentAmps,
         supplyCurrentAmps);
- 
+
     inputs.positionDegs =
-        Units.rotationsToDegrees(turretMotorPositionRotations.getValueAsDouble()*gearRatio); // This should work?
+        Units.rotationsToDegrees(
+            turretMotorPositionRotations.getValueAsDouble() * gearRatio); // This should work?
 
     inputs.velocityDegsPerSec = Units.rotationsToDegrees(velocityDegsPerSec.getValueAsDouble());
     inputs.appliedVolts = appliedVolts.getValueAsDouble();
@@ -112,7 +110,10 @@ public class TurretIOTalonFX implements TurretIO {
     Logger.recordOutput(
         "Turret Angular Position: ",
         Units.rotationsToDegrees(
-          turretCAN.getAbsolutePosition().getValueAsDouble())); //TODO: Ideally, you should have some offset constant when actually implementing this (if needed).
+            turretCAN
+                .getAbsolutePosition()
+                .getValueAsDouble())); // TODO: Ideally, you should have some offset constant when
+    // actually implementing this (if needed).
   }
 
   @Override
@@ -133,7 +134,9 @@ public class TurretIOTalonFX implements TurretIO {
 
     turretMotor.setControl(
         new PositionVoltage(
-                Units.degreesToRotations(positionDegs)/gearRatio) //TODO: Implement Turret Logic (this looks good, but need to check).
+                Units.degreesToRotations(positionDegs)
+                    / gearRatio) // TODO: Implement Turret Logic (this looks good, but need to
+            // check).
             .withFeedForward(ffVolts)); // CHECK FOR STOW ANGLE (positionDegs - 59)
   }
 
