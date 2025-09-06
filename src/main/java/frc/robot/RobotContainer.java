@@ -81,9 +81,13 @@ import frc.robot.subsystems.scoral.ScoralArmIOTalonFX;
 import frc.robot.subsystems.scoral.ScoralRollers;
 import frc.robot.subsystems.scoral.ScoralRollersIOSim;
 import frc.robot.subsystems.scoral.ScoralRollersIOTalonFX;
+import frc.robot.subsystems.turret.Turret;
+import frc.robot.subsystems.turret.TurretIOSim;
+import frc.robot.subsystems.turret.TurretIOTalonFX;
 import frc.robot.subsystems.vision.Vision;
 import frc.robot.subsystems.vision.VisionIOLimelight;
 import frc.robot.subsystems.vision.VisionIOPhotonVisionSim;
+import frc.robot.util.KeyboardInputs;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 
 /**
@@ -103,6 +107,7 @@ public class RobotContainer {
   private final Winch winch;
   private final Vision vision;
   private final SuperStructure superStructure;
+  private final Turret turret;
   private Command climbCommands;
 
   // Controller
@@ -111,6 +116,7 @@ public class RobotContainer {
   // private final Joystick joystikc = new Joystick(0);
   // private final JoystickButton btn = new JoystickButton(joystikc, 4);
   // private final KeyboardInputs keyboard = new KeyboardInputs(0);
+  private final KeyboardInputs keyboard = new KeyboardInputs(0);
 
   public final Trigger elevatorBrakeTrigger;
   private Trigger slowModeTrigger;
@@ -129,10 +135,16 @@ public class RobotContainer {
   public RobotContainer() {
     switch (SimConstants.currentMode) {
       case REAL:
+        turret =
+            new Turret(
+                new TurretIOTalonFX(
+                    11,
+                    1,
+                    SubsystemConstants.TurretConstants.ringToothCount,
+                    SubsystemConstants.TurretConstants.motorToothCount));
         brakeSwitch = new DigitalInput(RobotMap.BrakeSwitchIDs.brakeSwitchChannel);
         elevatorBrakeTrigger = new Trigger(() -> brakeSwitch.get());
         // // Real robot, instantiate hardware IO implementations
-
         elevator =
             new Elevator(
                 new ElevatorIOTalonFX(
@@ -181,6 +193,7 @@ public class RobotContainer {
 
         break;
       case SIM:
+        turret = new Turret(new TurretIOSim());
         elevatorBrakeTrigger = new Trigger(() -> true);
         // Sim robot, instantiate physics sim IO implementations
         drive =
@@ -222,7 +235,7 @@ public class RobotContainer {
 
       default:
         // limelight = new PowerDistribution(23, ModuleType.kRev);
-
+        turret = new Turret(new TurretIOSim());
         elevatorBrakeTrigger = new Trigger(() -> true);
         // Replayed robot, disable IO implementations
         drive =
@@ -460,8 +473,13 @@ public class RobotContainer {
                 driveController.leftTrigger().getAsBoolean()
                     || driveController.rightTrigger().getAsBoolean());
 
-    configureButtonBindings();
+    // configureButtonBindings();
     // test();
+    turretTest();
+  }
+
+  private void turretTest() {
+    keyboard.getXButton().onTrue(new InstantCommand(() -> turret.setPositionDegs(90, 20)));
   }
 
   private void test() {
