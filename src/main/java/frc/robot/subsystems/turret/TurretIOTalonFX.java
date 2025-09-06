@@ -6,6 +6,7 @@ import com.ctre.phoenix6.configs.CANcoderConfiguration;
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.PositionVoltage;
+import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.FeedbackSensorSourceValue;
@@ -138,6 +139,11 @@ public class TurretIOTalonFX implements TurretIO {
                     / gearRatio) // TODO: Implement Turret Logic (this looks good, but need to
             // check).
             .withFeedForward(ffVolts)); // CHECK FOR STOW ANGLE (positionDegs - 59)
+  }
+
+  @Override
+  public void setVelocity(double velocityRadPerSec, double ffVolts) {
+    turretMotor.setControl(new VelocityVoltage(Units.radiansToRotations(velocityRadPerSec)));
   }
 
   @Override

@@ -107,7 +107,7 @@ public class Turret extends SubsystemBase {
         positionDegs,
         turretFFModel.calculateWithVelocities(
             currentVelRadPerSec,
-            currentVelRadPerSec)); // TODO: Need to incorporate some function to calculate next
+            currentVelRadPerSec + 30)); // TODO: Need to incorporate some function to calculate next
     // velocity in this.
   }
 

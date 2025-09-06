@@ -26,5 +26,7 @@ public interface TurretIO {
 
   public default void stop() {}
 
+  public default void setVelocity(double velocityDegsPerSec, double ffVolts) {}
+
   public default void configurePID(double kP, double kI, double kD) {}
 }

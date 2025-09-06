@@ -3,73 +3,48 @@ package frc.robot.subsystems.turret;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.system.plant.DCMotor;
+import edu.wpi.first.math.system.plant.LinearSystemId;
 import edu.wpi.first.math.util.Units;
-import edu.wpi.first.wpilibj.simulation.SingleJointedArmSim;
+import edu.wpi.first.wpilibj.simulation.DCMotorSim;
 import frc.robot.constants.SubsystemConstants;
 
-/** Add your docs here. */
 public class TurretIOSim implements TurretIO {
-
-  // SIM VARIABLES (CHANGE)
+  // CHANGE THESE VALUES TO MATCH YOUR MOTOR AND GEARBOX
   private int gearBoxMotorCount = 1;
   private double gearing = SubsystemConstants.TurretConstants.gearRatio;
-  private double armLength =
-      Units.inchesToMeters(12); // TODO: This is just an arbitrary radiuss right now.
-  private double momentOfInertia =
-      SingleJointedArmSim.estimateMOI(armLength, Units.lbsToKilograms(5)); // CHANGE PER ARM
-  private double minAngleRadians = -Math.PI; // Arbitrary value.
-  private double maxAngleRadians = Math.PI; // Arbitrary value.
-  private boolean simulateGravity =
-      false; // A Turret is basically just a horizontal SingleJointedArm (to some extent).
-  private double startingAngleRads = 0.0;
+  private DCMotor motor = DCMotor.getKrakenX60Foc(gearBoxMotorCount);
 
-  private boolean closedLoop = true;
-  private final DCMotor armGearbox = DCMotor.getKrakenX60Foc(gearBoxMotorCount);
-  private final SingleJointedArmSim sim =
-      new SingleJointedArmSim(
-          armGearbox,
-          gearing,
-          momentOfInertia,
-          armLength,
-          minAngleRadians,
-          maxAngleRadians,
-          simulateGravity,
-          startingAngleRads);
-  private final PIDController pid = new PIDController(0, 0, 0);
+  private DCMotorSim sim =
+      new DCMotorSim(LinearSystemId.createDCMotorSystem(motor, 0.004, gearing), motor);
 
-  private double currentAmps = 0.0;
+  private PIDController pid = new PIDController(0.0, 0.0, 0.0);
+
+  private boolean closedLoop = false;
+  private double ffVolts = 0.0;
   private double appliedVolts = 0.0;
-  private double velocityRadsPerSec = 0.0;
-  private double positionRads = 0.0;
-  private double positionSetpointRads = 0.0;
 
   private double clampedValueLowVolts = -12.0;
   private double clampedValueHighVolts = 12.0;
 
   @Override
   public void updateInputs(TurretIOInputs inputs) {
-    positionSetpointRads = pid.getSetpoint();
     if (closedLoop) {
       appliedVolts =
           MathUtil.clamp(
-              pid.calculate(sim.getAngleRads(), positionSetpointRads),
+              pid.calculate(sim.getAngularVelocityRadPerSec()) + ffVolts,
               clampedValueLowVolts,
               clampedValueHighVolts);
+      sim.setInputVoltage(appliedVolts);
     }
-
-    sim.setInputVoltage(appliedVolts);
-
-    positionRads = sim.getAngleRads();
-    velocityRadsPerSec = sim.getVelocityRadPerSec();
-    currentAmps = sim.getCurrentDrawAmps();
-
-    inputs.positionSetpointDegs = Math.toDegrees(positionSetpointRads);
-    inputs.appliedVolts = appliedVolts;
-    inputs.positionDegs = Math.toDegrees(positionRads);
-    inputs.velocityDegsPerSec = Math.toDegrees(velocityRadsPerSec);
-    inputs.statorCurrentAmps = currentAmps;
-
+    // sim.setInputVoltage(appliedVolts);
     sim.update(SubsystemConstants.LOOP_PERIOD_SECONDS);
+
+    inputs.positionDegs = 0;
+    // inputs.velocityRadPerSec =
+    // Units.radiansPerSecondToRotationsPerMinute(sim.getAngularVelocityRadPerSec());
+    inputs.velocityDegsPerSec = Units.radiansToDegrees(sim.getAngularVelocityRPM());
+    inputs.appliedVolts = appliedVolts;
+    inputs.statorCurrentAmps = sim.getCurrentDrawAmps();
   }
 
   @Override
@@ -80,16 +55,15 @@ public class TurretIOSim implements TurretIO {
   }
 
   @Override
-  public void setPositionSetpointDegs(double positionDegs, double ffVolts) {
+  public void setVelocity(double velocityRadPerSec, double ffVolts) {
     closedLoop = true;
-    appliedVolts = ffVolts;
-    pid.setSetpoint(Math.toRadians(positionDegs));
+    pid.setSetpoint(velocityRadPerSec);
+    this.ffVolts = ffVolts;
   }
 
   @Override
   public void stop() {
-    appliedVolts = 0;
-    pid.setSetpoint(sim.getAngleRads());
+    setVoltage(0.0);
   }
 
   @Override

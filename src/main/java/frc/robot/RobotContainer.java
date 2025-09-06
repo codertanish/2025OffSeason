@@ -82,7 +82,7 @@ import frc.robot.subsystems.scoral.ScoralRollers;
 import frc.robot.subsystems.scoral.ScoralRollersIOSim;
 import frc.robot.subsystems.scoral.ScoralRollersIOTalonFX;
 import frc.robot.subsystems.turret.Turret;
-import frc.robot.subsystems.turret.TurretIOSim;
+import frc.robot.subsystems.turret.TurretIOSimArmBased;
 import frc.robot.subsystems.turret.TurretIOTalonFX;
 import frc.robot.subsystems.vision.Vision;
 import frc.robot.subsystems.vision.VisionIOLimelight;
@@ -193,7 +193,7 @@ public class RobotContainer {
 
         break;
       case SIM:
-        turret = new Turret(new TurretIOSim());
+        turret = new Turret(new TurretIOSimArmBased());
         elevatorBrakeTrigger = new Trigger(() -> true);
         // Sim robot, instantiate physics sim IO implementations
         drive =
@@ -235,7 +235,7 @@ public class RobotContainer {
 
       default:
         // limelight = new PowerDistribution(23, ModuleType.kRev);
-        turret = new Turret(new TurretIOSim());
+        turret = new Turret(new TurretIOSimArmBased());
         elevatorBrakeTrigger = new Trigger(() -> true);
         // Replayed robot, disable IO implementations
         drive =
@@ -479,7 +479,8 @@ public class RobotContainer {
   }
 
   private void turretTest() {
-    keyboard.getXButton().onTrue(new InstantCommand(() -> turret.setPositionDegs(90, 20)));
+    keyboard.getXButton().onTrue(new InstantCommand(() -> turret.setPositionDegs(90, 10)));
+    keyboard.getCButton().onTrue(new InstantCommand(() -> scoralArm.setPositionDegs(20, 20)));
   }
 
   private void test() {
